@@ -28,7 +28,6 @@ let label = '';
 let labelKeys = [];
 let linhaVr = [];
 let labelTmp = '';
-let i = 0;
 
 codigo2 = [
   'MOVE A,15',
@@ -48,7 +47,7 @@ codigo2 = [
 ]
 
 codigo = [
-  'MOVE A,7',
+  'MOVE A,7  --mamam',
   'MOVE B,6',
   'enquanto: MOVE C,B',
   'MOVE C,B',
@@ -236,7 +235,6 @@ function processar(codigo) {
   labelKeys.push({ name: 'fim:', go: codigo.length - 1 })
 
   for (pc = 0; pc < codigo.length; pc++) {
-    //if (i > 100) break;
     let stop = verifyFinal(codigo[pc]);
     if (stop == false) {
       geraTokens(codigo[pc]);
@@ -244,7 +242,6 @@ function processar(codigo) {
     } else {
       break;
     }
-    //i++;
   }
   console.log(`A = ${registrador.A} , B = ${registrador.B} , C = ${registrador.C}`)
   console.log('Labels', labelKeys)
