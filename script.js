@@ -16,94 +16,149 @@ let registrador = {
 
 
 const mnemonicos = ['MOVE', 'ADD', 'SUBT', 'MULT', 'DIV', 'CMP', 'JUMP', 'JTRUE', 'JFALSE', 'HALT'];
-const regexMn = /([A-Z]+) ([A-Z]),([0-9-A-Z]?[0-9-A-Z])/;
+//const regexMn = /([A-Z]+) ([A-Z]),([0-9-A-Z]?[0-9-A-Z])/; NAO MUDAR NADA AQUI
+const regexMn = /([A-Z]+) ([A-Z]),(([0-9-A-Z]?[0-9-A-Z]))?( [a-z]+)?/;
+//const regexLb = /([a-z]+:)/; NAO MUDAR NADA AQUI
 const regexLb = /([a-z]+:)/;
-const regexLbFinal = /( [a-z]+)/;
+//const regexLbFinal = /( [a-z]+)/; NAO MUDAR NADA AQUI
+const regexLbFinal = /([J-U]+) ([a-z]+)/;
 
 let pc = 0;
 let label = '';
 let labelKeys = [];
 let linhaVr = [];
 let labelTmp = '';
+let i = 0;
 
-codigo = [
-  'MOVE A,6',
-  'enquanto: MOVE B,5',
-  'MOVE A,20',
-  'CPM A,B',
-  'ADD A,20',
-  'SUBT A,2',
-  'MULT C,8 enquanto',
-  'HALT'
+codigo2 = [
+  'MOVE A,15',
+  'MOVE B,5',
+  'enquanto: SUBT A,1',// codigo quebrado
+  'SUBT A,1',// codigo quebrado
+  'ADD A,1',
+  'MOVE B,A',
+  'CMP B,50',
+  'JTRUE B, fim',
+  'MOVE B,A',
+  'MOVE B,C',
+  'MULT A,B',
+  'SUBT B,1',
+  'JUMP enquanto',
+  'fim: HALT',
 ]
 
-function verificarMnemonicos(mn) {
-  console.log(mn)
-}
+codigo = [
+  'MOVE A,7',
+  'MOVE B,6',
+  'enquanto: MOVE C,B',
+  'MOVE C,B',
+  'CMP B,1',
+  'JTRUE B, fim',
+  'MOVE B,C',
+  'MULT A,B',
+  'SUBT B,1',
+  'JUMP enquanto',
+  'fim: HALT'
+]
 
 function geraTokens(linha) {
   verifyLabel(linha);
-  let teste;
+  if (verifyFinal(linha) == true) return;
 
-  if (linha[1] == 'HALT') {
-    console.log('Processo Encerrado');
-
-    return false;
-  }
-
-
-  teste = linha.match(regexLbFinal);
-
-
-  if (teste) {
-    labelTmp = teste[0].replace(' ', '') + ':';
-    let lb = labelKeys.find(element => element.name == labelTmp)
-
-    if (false) {
-      pc = lb.go;
-      console.log(pc)
-      return true;
-    }
-  }
+  let teste = linha;
 
   linha = linha.match(regexMn);
-  console.log(linha)
+
+  if (verifyJump(teste)) {
+    return;
+  } else {
+
+    console.log(linha)
+
+    if (linha[1] == 'MOVE') atribuirValor(linha);
+
+    if (linha[1] == 'ADD') soma(linha);
+
+    if (linha[1] == 'SUBT') subt(linha);
+
+    if (linha[1] == 'MULT') mult(linha);
+
+    if (linha[1] == 'CMP') verifyCmp(linha)
+
+    if (linha[1] == 'JTRUE' || linha[1] == 'JFALSE') verifyBoolean(linha)
 
 
-  if (linha[1] == 'MOVE') atribuirValor(linha);
+  }
 
-  if (linha[1] == 'ADD') soma(linha);
-
-  if (linha[1] == 'SUBT') subt(linha);
-
-  if (linha[1] == 'MULT') mult(linha);
-
-
-  //console.log("Tokens", linha)
-  //return tokens;
 }
 
+function verifyCmp(instrucao) {
+  // CMP   B, 1
+  //JTRUE B, fim
+  console.log('instrucao Cmp', instrucao)
+  if (registrador[instrucao[2]] == +instrucao[3]) {
+    console.log('CMP = TRUE' + registrador[instrucao[2]] + 'e igual a' + instrucao[3])
+    registrador[instrucao[2]] = 1;
+    return true;
+  } else {
+    console.log('CMP = TRUE' + registrador[instrucao[2]] + 'e diferente de' + instrucao[3])
+    registrador[instrucao[2]] = 0;
+    console.log('CMP = FALSE')
+    return false;
+  }
+}
+
+function verifyBoolean(instrucao) {
+  let nameLabel = instrucao[5].replace(' ', '') + ':'
+  //  console.log(' Instrucao =',instrucao)
+  // console.log('Label Instrucao =',nameLabel)
+  // console.log('Mn Instrucao =',instrucao[1])
+  // console.log('Mn =',instrucao[2])
+  // console.log('Registrador',registrador[instrucao[2]])
+
+  if (instrucao[1] == "JTRUE") {
+    if (registrador[instrucao[2]] != 0) {
+      console.log('JTRUE', registrador[instrucao[2]]);
+      jump(nameLabel);
+    }
+    return;
+  }
+  if (instrucao[1] == "JFALSE") {
+    if (registrador[instrucao[2]] == 0) {
+      console.log('JFALSE', instrucao[5]);
+      jump(nameLabel);
+    }
+    return;
+  }
+  pc++;
+}
 
 function verifyLabel(linha) {
-  label = linha.match(regexLb);
-  if (label) {
+  let index = 2;
+  let rgxteste = /([J-U]+) ([a-z]+)/;
 
+  label = linha.match(regexLb);
+
+  if (label != null) {
+    if (label[1] == 'JTRUE' || label[1] == 'JFALSE') {
+      rgxteste = /([A-Z]+) ([A-Z]),(([0-9-A-Z]?[0-9-A-Z]))? ([a-z]+)?/;
+      index = 5;
+    }
     for (let j = 0; j < codigo.length; j++) {
 
-      linhaVr = codigo[j].match(regexLbFinal);
+      linhaVr = codigo[j].match(rgxteste);
       if (linhaVr != null) {
-        if (label[0] == (linhaVr[0].replace(' ', '')) + ':') {
-
+        if (label[0] == (linhaVr[index].replace(' ', '') + ':')) {
           labelKeys.push({ name: label[0], go: pc })
-          return j;
+          return true;
         }
       }
     }
   }
+  return false;
 }
 
 function atribuirValor(instrucao) {
-
   if (!isNaN(instrucao[3])) {
     registrador[instrucao[2]] = +instrucao[3];
   } else {
@@ -128,6 +183,7 @@ function subt(instrucao) {
     registrador[instrucao[2]] -= registrador[instrucao[2]] - registrador[instrucao[3]];
   }
 }
+
 function mult(instrucao) {
 
   if (!isNaN(instrucao[3])) {
@@ -137,15 +193,61 @@ function mult(instrucao) {
   }
 }
 
-function processar(codigo) {
-  for (pc = 0; pc < codigo.length; pc++) {
-    geraTokens(codigo[pc])
-    //tokens = geraTokens(codigo[pc]);
-    //let resultado = executar(tokens, pc);
-    //console.log(resultado);
+function verifyFinal(linha) {
+  let test = linha.match(regexLb);
+
+  if (test == null) {
+    linha = linha.match(/([A-Z][A-Z][A-Z]?[A-Z])/);
+    if (linha[1] == 'HALT') {
+      console.log('Final do Processo!')
+      return true;
+    }
   }
-  console.log(`A = ${registrador.A} , B = ${registrador.B} , C = ${registrador.C} , H = ${registrador.H}`)
-  console.log('Label ', labelKeys)
+  return false;
+}
+
+function verifyJump(linha) {
+  linha = linha.match(regexLbFinal);
+  if (linha == null) return false;
+
+  if (linha[1] == 'JUMP') {
+    jump(linha[2].replace(' ', '') + ':')
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function jump(labelName) {
+  //console.log('lb',labelKeys.find(element => element.name == label))
+  console.log('Label', labelKeys)
+  let lb = labelKeys.find(element => element.name == labelName)
+  if (lb) {
+    console.log('Fui da linha', pc, 'Fui para linha', lb.go)
+    pc = lb.go; //lb.go
+    return true;
+
+  }
+  return false;
+}
+
+function processar(codigo) {
+
+  labelKeys.push({ name: 'fim:', go: codigo.length - 1 })
+
+  for (pc = 0; pc < codigo.length; pc++) {
+    //if (i > 100) break;
+    let stop = verifyFinal(codigo[pc]);
+    if (stop == false) {
+      geraTokens(codigo[pc]);
+      console.log(pc)
+    } else {
+      break;
+    }
+    //i++;
+  }
+  console.log(`A = ${registrador.A} , B = ${registrador.B} , C = ${registrador.C}`)
+  console.log('Labels', labelKeys)
 }
 
 window.addEventListener('load', function() {
